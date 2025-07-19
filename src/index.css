@@ -8,35 +8,53 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* Nature-inspired palette */
+    --background: 120 40% 98%;
+    --foreground: 160 15% 15%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card: 120 50% 99%;
+    --card-foreground: 160 15% 15%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover: 120 50% 99%;
+    --popover-foreground: 160 15% 15%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    /* Sage green primary */
+    --primary: 120 25% 45%;
+    --primary-foreground: 120 40% 98%;
+    --primary-glow: 120 30% 55%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    /* Soft earth secondary */
+    --secondary: 40 25% 92%;
+    --secondary-foreground: 160 15% 25%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    /* Muted earth tones */
+    --muted: 30 20% 95%;
+    --muted-foreground: 160 10% 55%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    /* Warm accent */
+    --accent: 45 35% 88%;
+    --accent-foreground: 160 15% 25%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 65% 55%;
+    --destructive-foreground: 120 40% 98%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --border: 120 15% 88%;
+    --input: 120 15% 90%;
+    --ring: 120 25% 45%;
 
-    --radius: 0.5rem;
+    --radius: 1rem;
+
+    /* Beautiful gradients */
+    --gradient-nature: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)));
+    --gradient-sunrise: linear-gradient(135deg, hsl(45 55% 85%), hsl(25 45% 90%));
+    --gradient-forest: linear-gradient(180deg, hsl(var(--background)), hsl(120 30% 95%));
+
+    /* Shadows with nature colors */
+    --shadow-soft: 0 4px 20px -4px hsl(var(--primary) / 0.15);
+    --shadow-glow: 0 0 30px hsl(var(--primary-glow) / 0.3);
+
+    /* Smooth transitions */
+    --transition-nature: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 
     --sidebar-background: 0 0% 98%;
 

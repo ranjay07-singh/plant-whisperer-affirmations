@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 interface PlantData {
   name: string;
   scientificName: string;
+  commonNames: string[];
   careInstructions: {
     light: string;
     water: string;
@@ -13,7 +14,7 @@ interface PlantData {
     humidity?: string;
   };
   affirmation: string;
-  confidence?: number;
+  confidence: number;
 }
 
 interface PlantIdentificationProps {
@@ -22,53 +23,53 @@ interface PlantIdentificationProps {
   onNewScan: () => void;
 }
 
-// Mock plant database - in production, this would use TensorFlow.js or external API
-const mockPlantDatabase: PlantData[] = [
-  {
-    name: "Fiddle Leaf Fig",
-    scientificName: "Ficus lyrata",
-    careInstructions: {
+// PlantNet API configuration
+const PLANTNET_API_KEY = '2b10Uh198814l9gNfEqHE7y79';
+const PLANTNET_API_URL = 'https://my-api.plantnet.org/v2/identify';
+
+// Basic care instructions by plant family
+const getCareInstructions = (familyName?: string) => {
+  const familyCare: { [key: string]: any } = {
+    'Araceae': {
       light: "Bright, indirect light",
-      water: "Water when top 1-2 inches of soil are dry",
-      temperature: "65-75°F (18-24°C)",
-      humidity: "30-65%"
+      water: "Water when top inch of soil feels dry",
+      temperature: "65-80°F (18-27°C)",
+      humidity: "50-60%"
     },
-    affirmation: "Like this fiddle leaf fig, you stand tall and graceful, bringing natural beauty to every space you enter. Your presence creates harmony and peace. 🌿"
-  },
-  {
-    name: "Snake Plant",
-    scientificName: "Sansevieria trifasciata",
-    careInstructions: {
-      light: "Low to bright, indirect light",
+    'Asparagaceae': {
+      light: "Low to bright indirect light",
       water: "Water every 2-6 weeks when soil is dry",
       temperature: "70-90°F (21-32°C)",
       humidity: "30-50%"
     },
-    affirmation: "Just like the resilient snake plant, you thrive in any environment. Your strength and adaptability inspire those around you. You purify the energy wherever you go. 💚"
-  },
-  {
-    name: "Monstera Deliciosa",
-    scientificName: "Monstera deliciosa",
-    careInstructions: {
-      light: "Medium to bright, indirect light",
-      water: "Water when top inch of soil is dry",
-      temperature: "65-85°F (18-29°C)",
-      humidity: "50-60%"
-    },
-    affirmation: "Like the monstera's beautiful splits and fenestrations, your unique qualities make you extraordinary. Embrace your individual beauty and let yourself grow wild and free. 🌱"
-  },
-  {
-    name: "Peace Lily",
-    scientificName: "Spathiphyllum",
-    careInstructions: {
-      light: "Low to medium, indirect light",
-      water: "Keep soil consistently moist but not soggy",
-      temperature: "65-80°F (18-27°C)",
-      humidity: "40-50%"
-    },
-    affirmation: "Like the peace lily's serene white blooms, you bring tranquility and grace to every situation. Your gentle strength creates harmony in chaos. ☮️"
-  }
-];
+    'Lamiaceae': {
+      light: "Bright, indirect light",
+      water: "Water when soil surface feels dry",
+      temperature: "65-75°F (18-24°C)",
+      humidity: "40-60%"
+    }
+  };
+  
+  return familyCare[familyName || ''] || {
+    light: "Bright, indirect light",
+    water: "Water when soil surface feels dry",
+    temperature: "65-75°F (18-24°C)",
+    humidity: "40-60%"
+  };
+};
+
+// Generate affirmations based on plant characteristics
+const generateAffirmation = (plantName: string): string => {
+  const affirmations = [
+    `Like the resilient ${plantName}, you adapt and thrive in any environment life presents to you. Your strength shines through every challenge. 🌿`,
+    `Just as ${plantName} grows steadily towards the light, you continue to reach for your highest potential with grace and determination. ✨`,
+    `Like the beautiful ${plantName}, you bring natural harmony and peace to every space you enter. Your presence is a gift. 🌱`,
+    `Just as ${plantName} purifies the air around it, your positive energy brings clarity and freshness to others. 💚`,
+    `Like the patient ${plantName}, you understand that growth takes time, and you trust your unique journey with wisdom. 🌸`
+  ];
+  
+  return affirmations[Math.floor(Math.random() * affirmations.length)];
+};
 
 export const PlantIdentification: React.FC<PlantIdentificationProps> = ({ 
   imageFile, 
@@ -79,25 +80,61 @@ export const PlantIdentification: React.FC<PlantIdentificationProps> = ({
   const [plantData, setPlantData] = useState<PlantData | null>(null);
   const [error, setError] = useState<string>('');
 
-  // Simulate plant identification
+  // Plant identification using PlantNet API
   React.useEffect(() => {
     const identifyPlant = async () => {
       try {
         setIsIdentifying(true);
-        // Simulate API delay
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        
-        // Mock identification - randomly select a plant
-        const randomPlant = mockPlantDatabase[Math.floor(Math.random() * mockPlantDatabase.length)];
-        setPlantData({
-          ...randomPlant,
-          confidence: Math.floor(Math.random() * 15) + 85 // 85-99% confidence
-        });
-        
         setError('');
-      } catch (err) {
-        setError('Failed to identify plant. Please try again.');
-        console.error('Identification error:', err);
+        
+        // Prepare form data for PlantNet API
+        const formData = new FormData();
+        formData.append('images', imageFile);
+        formData.append('organs', 'auto');
+        formData.append('modifiers', 'crops,fake_fruits,latin');
+        formData.append('plant-language', 'en');
+        formData.append('plant-details', 'common_names');
+        
+        // Call PlantNet API
+        const response = await fetch(`${PLANTNET_API_URL}/all?api-key=${PLANTNET_API_KEY}`, {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (!response.ok) {
+          throw new Error(`Failed to identify plant (${response.status})`);
+        }
+
+        const data = await response.json();
+        
+        if (!data.results || data.results.length === 0) {
+          throw new Error('No plant species could be identified. Try with a clearer image.');
+        }
+
+        // Get the best match
+        const bestResult = data.results[0];
+        const species = bestResult.species;
+        
+        // Extract plant information
+        const plantName = species.commonNames && species.commonNames.length > 0 
+          ? species.commonNames[0] 
+          : species.scientificNameWithoutAuthor;
+
+        const careInstructions = getCareInstructions(species.family?.scientificNameWithoutAuthor);
+        
+        const plantInfo: PlantData = {
+          name: plantName,
+          scientificName: species.scientificName,
+          commonNames: species.commonNames || [],
+          careInstructions,
+          confidence: Math.round(bestResult.score * 100),
+          affirmation: generateAffirmation(plantName)
+        };
+
+        setPlantData(plantInfo);
+      } catch (err: any) {
+        console.error('Plant identification error:', err);
+        setError(err.message || 'Failed to identify plant. Please try again with a clearer image.');
       } finally {
         setIsIdentifying(false);
       }

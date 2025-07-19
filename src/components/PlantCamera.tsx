@@ -17,6 +17,12 @@ export const PlantCamera: React.FC<PlantCameraProps> = ({ onImageCapture, onClos
 
   const startCamera = async () => {
     try {
+      // Check if navigator.mediaDevices is available
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        setError('Camera is not supported on this device or browser. Please use the upload option.');
+        return;
+      }
+
       const stream = await navigator.mediaDevices.getUserMedia({ 
         video: { 
           width: { ideal: 1280 },
@@ -27,11 +33,24 @@ export const PlantCamera: React.FC<PlantCameraProps> = ({ onImageCapture, onClos
       
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
-        setIsStreaming(true);
-        setError('');
+        videoRef.current.onloadedmetadata = () => {
+          videoRef.current?.play();
+          setIsStreaming(true);
+          setError('');
+        };
       }
-    } catch (err) {
-      setError('Camera access denied. Please use the upload option.');
+    } catch (err: any) {
+      let errorMessage = 'Camera access denied. Please use the upload option.';
+      
+      if (err.name === 'NotAllowedError') {
+        errorMessage = 'Camera permission denied. Please allow camera access and try again.';
+      } else if (err.name === 'NotFoundError') {
+        errorMessage = 'No camera found. Please use the upload option.';
+      } else if (err.name === 'NotSupportedError') {
+        errorMessage = 'Camera not supported on this device. Please use the upload option.';
+      }
+      
+      setError(errorMessage);
       console.error('Camera error:', err);
     }
   };
@@ -96,8 +115,14 @@ export const PlantCamera: React.FC<PlantCameraProps> = ({ onImageCapture, onClos
         </div>
 
         {error && (
-          <div className="text-sm text-destructive bg-destructive/10 p-3 rounded-lg border border-destructive/20">
+          <div className="text-sm text-destructive bg-destructive/10 p-3 rounded-lg border border-destructive/20 animate-fade-in">
+            <div className="font-medium mb-1">Camera Issue</div>
             {error}
+            {error.includes('permission') && (
+              <div className="mt-2 text-xs">
+                💡 Tip: Look for a camera icon in your browser's address bar to allow access
+              </div>
+            )}
           </div>
         )}
 
